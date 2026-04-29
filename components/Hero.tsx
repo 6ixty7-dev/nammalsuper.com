@@ -8,7 +8,7 @@ import { usePresence, formatLastSeen } from '@/hooks/usePresence';
 export default function Hero() {
   const { days, hours, minutes, seconds } = useDaysCounter();
   const { partner, myProfile } = usePartner();
-  const { isPartnerOnline, partnerLastSeen } = usePresence('/');
+  const { isPartnerOnline, partnerLastSeen } = usePresence();
 
   const myName = myProfile?.name || 'You';
   const partnerName = partner?.name || 'Your Love';

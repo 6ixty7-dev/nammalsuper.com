@@ -18,7 +18,7 @@ interface Message {
 export default function ChatSystem() {
   const { user } = useAuth();
   const { partner } = usePartner();
-  const { isPartnerOnline } = usePresence('/chat');
+  const { isPartnerOnline } = usePresence();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);

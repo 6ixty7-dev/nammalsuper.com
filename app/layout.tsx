@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Caveat, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
+import { PresenceProvider } from "@/hooks/usePresence";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-display",
@@ -49,7 +50,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-paper-bg text-ink-brown font-ui selection:bg-antique-gold/20 antialiased overflow-x-hidden">
         <AuthProvider>
-          {children}
+          <PresenceProvider>
+            {children}
+          </PresenceProvider>
         </AuthProvider>
       </body>
     </html>

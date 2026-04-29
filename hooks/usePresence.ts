@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface PresenceState {
   isPartnerOnline: boolean;
@@ -11,8 +13,16 @@ interface PresenceState {
   onlineUsers: string[];
 }
 
-export function usePresence(currentPage?: string): PresenceState {
+const PresenceContext = createContext<PresenceState>({
+  isPartnerOnline: false,
+  partnerLastSeen: null,
+  partnerCurrentPage: null,
+  onlineUsers: [],
+});
+
+export function PresenceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [state, setState] = useState<PresenceState>({
     isPartnerOnline: false,
     partnerLastSeen: null,
@@ -20,17 +30,24 @@ export function usePresence(currentPage?: string): PresenceState {
     onlineUsers: [],
   });
   const [supabase] = useState(() => createClient());
+  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!user?.email) return;
 
-    const channel = supabase.channel('global-presence', {
+    // Check if channel already exists to prevent duplicate subscriptions
+    const existingChannel = supabase.getChannels().find(c => c.topic === 'realtime:global-presence');
+    if (existingChannel) {
+      supabase.removeChannel(existingChannel);
+    }
+
+    const newChannel = supabase.channel('global-presence', {
       config: { presence: { key: user.email } },
     });
 
-    channel
+    newChannel
       .on('presence', { event: 'sync' }, () => {
-        const presenceState = channel.presenceState();
+        const presenceState = newChannel.presenceState();
         const onlineEmails: string[] = [];
         let partnerOnline = false;
         let partnerPage: string | null = null;
@@ -40,7 +57,6 @@ export function usePresence(currentPage?: string): PresenceState {
           onlineEmails.push(email);
           if (email !== user.email) {
             partnerOnline = true;
-            // Get the most recent presence data
             const latest = (presences as Array<{ current_page?: string; online_at?: string }>)[0];
             if (latest) {
               partnerPage = latest.current_page || null;
@@ -67,38 +83,46 @@ export function usePresence(currentPage?: string): PresenceState {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await channel.track({
-            online_at: new Date().toISOString(),
-            current_page: currentPage || '/',
-          });
+          try {
+            await newChannel.track({
+              online_at: new Date().toISOString(),
+              current_page: window.location.pathname || '/',
+            });
+          } catch (e) {
+            console.error('Initial presence track error:', e);
+          }
         }
       });
 
-    // Update presence when page changes
-    const updatePresence = async () => {
-      // @ts-ignore - state exists on RealtimeChannel
-      if (channel && channel.state === 'joined') {
-        try {
-          await channel.track({
-            online_at: new Date().toISOString(),
-            current_page: currentPage || '/',
-          });
-        } catch (e) {
-          console.error('Presence track error:', e);
-        }
-      }
-    };
-
-    if (currentPage) {
-      updatePresence();
-    }
+    setChannel(newChannel);
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(newChannel);
     };
-  }, [user?.email, currentPage, supabase]);
+  }, [user?.email, supabase]);
 
-  return state;
+  // Track page changes
+  useEffect(() => {
+    if (channel && user?.email) {
+      // @ts-ignore
+      if (channel.state === 'joined') {
+        channel.track({
+          online_at: new Date().toISOString(),
+          current_page: pathname || '/',
+        }).catch(e => console.error('Presence track error:', e));
+      }
+    }
+  }, [pathname, channel, user?.email]);
+
+  return (
+    <PresenceContext.Provider value={state}>
+      {children}
+    </PresenceContext.Provider>
+  );
+}
+
+export function usePresence(): PresenceState {
+  return useContext(PresenceContext);
 }
 
 export function formatLastSeen(isoString: string | null): string {

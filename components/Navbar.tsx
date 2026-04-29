@@ -13,7 +13,7 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
   const { partner } = usePartner();
   const pathname = usePathname();
-  const { isPartnerOnline, partnerLastSeen } = usePresence(pathname || '/');
+  const { isPartnerOnline, partnerLastSeen } = usePresence();
   const [scrolled, setScrolled] = useState(false);
 
   const partnerName = partner?.name || 'Love';
