@@ -1,109 +1,111 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { SITE_CONFIG } from '@/lib/constants';
+import { useDaysCounter } from '@/hooks/useDaysCounter';
 
 export default function Hero() {
+  const { days, hours, minutes, seconds } = useDaysCounter();
+
   return (
-    <section className="relative min-h-[70vh] flex items-center justify-center px-4 pt-20 overflow-hidden">
-      {/* Gradient Background Orbs */}
-      <div className="absolute inset-0">
+    <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-12 md:pt-24 bg-noise">
+      
+      {/* Abstract Watercolor Wash (Simulated with gradients) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
         <motion.div
-          className="absolute w-96 h-96 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(244, 63, 94, 0.08) 0%, transparent 70%)',
-            top: '10%',
-            left: '20%',
-          }}
-          animate={{ scale: [1, 1.3, 1], x: [0, 30, 0] }}
-          transition={{ repeat: Infinity, duration: 10, ease: 'easeInOut' }}
+          className="w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] rounded-full mix-blend-multiply opacity-40 blur-[80px]"
+          style={{ background: 'radial-gradient(circle, var(--color-dusty-rose) 0%, transparent 70%)' }}
+          animate={{ scale: [1, 1.05, 1], x: [0, 20, 0], y: [0, -20, 0] }}
+          transition={{ repeat: Infinity, duration: 15, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute w-80 h-80 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(251, 113, 133, 0.06) 0%, transparent 70%)',
-            bottom: '10%',
-            right: '15%',
-          }}
-          animate={{ scale: [1, 1.2, 1], y: [0, -20, 0] }}
-          transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut', delay: 2 }}
+          className="absolute w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full mix-blend-multiply opacity-30 blur-[60px]"
+          style={{ background: 'radial-gradient(circle, var(--color-antique-gold) 0%, transparent 70%)', transform: 'translate(20%, 20%)' }}
+          animate={{ scale: [1, 1.1, 1], x: [0, -30, 0], y: [0, 10, 0] }}
+          transition={{ repeat: Infinity, duration: 20, ease: "easeInOut", delay: 2 }}
         />
       </div>
 
-      <div className="relative z-10 text-center max-w-2xl mx-auto">
-        {/* Animated Heart */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center">
+        
+        {/* Handwritten Headline */}
         <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, type: 'spring', stiffness: 200 }}
-          className="mb-6"
+          initial={{ opacity: 0, y: 30, rotate: -2 }}
+          animate={{ opacity: 1, y: 0, rotate: -2 }}
+          transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="mb-12 text-center"
         >
-          <motion.span
-            className="inline-block text-7xl md:text-8xl"
-            animate={{ scale: [1, 1.15, 1] }}
-            transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-          >
-            💖
-          </motion.span>
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-display italic text-ink-brown leading-tight tracking-tight">
+            Our Story
+          </h1>
+          <p className="mt-4 font-handwriting text-xl md:text-2xl text-warm-gray transform rotate-1">
+            since the beginning...
+          </p>
         </motion.div>
 
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-7xl lg:text-8xl gradient-text mb-4"
-          style={{ fontFamily: 'var(--font-handwritten)', lineHeight: 1.1 }}
-        >
-          {SITE_CONFIG.title}
-        </motion.h1>
+        {/* Floating Counter Pill */}
+        <div className="relative">
+          {/* Doodle Hearts */}
+          <motion.svg
+            className="absolute -left-12 top-2 text-dusty-rose"
+            width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            animate={{ rotate: [-5, 5, -5] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </motion.svg>
+          
+          <motion.svg
+            className="absolute -right-10 bottom-0 text-antique-gold"
+            width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            animate={{ rotate: [5, -5, 5] }}
+            transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 1 }}
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </motion.svg>
 
-        {/* Tagline */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-lg md:text-xl text-soft-black/60 dark:text-dark-text/60 mb-6"
-          style={{ fontFamily: 'var(--font-casual)', fontSize: '1.3rem' }}
-        >
-          {SITE_CONFIG.tagline}
-        </motion.p>
-
-        {/* Decorative Separator */}
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="w-32 h-px bg-gradient-to-r from-transparent via-rose-400 to-transparent mx-auto mb-6"
-        />
-
-        {/* Scroll Indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="mt-12"
-        >
           <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="text-soft-black/30 dark:text-dark-text/30"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="glass-card px-8 py-4 rounded-full float-subtle flex items-center gap-6"
           >
-            <svg
-              className="w-6 h-6 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-            <span className="text-xs mt-2 block" style={{ fontFamily: 'var(--font-casual)' }}>
-              scroll down
-            </span>
+            <div className="flex flex-col items-center min-w-[40px]">
+              <span className="font-display text-2xl md:text-3xl text-ink-brown tabular-nums tracking-tight">{days}</span>
+              <span className="font-handwriting text-warm-gray text-sm mt-1">days</span>
+            </div>
+            <span className="text-warm-sand">:</span>
+            <div className="flex flex-col items-center min-w-[30px]">
+              <span className="font-display text-xl md:text-2xl text-ink-brown tabular-nums tracking-tight">{hours}</span>
+              <span className="font-handwriting text-warm-gray text-xs mt-1">hrs</span>
+            </div>
+            <span className="text-warm-sand">:</span>
+            <div className="flex flex-col items-center min-w-[30px]">
+              <span className="font-display text-xl md:text-2xl text-ink-brown tabular-nums tracking-tight">{minutes}</span>
+              <span className="font-handwriting text-warm-gray text-xs mt-1">min</span>
+            </div>
           </motion.div>
-        </motion.div>
+        </div>
+
       </div>
+
+      {/* Ink Quill Scroll Indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2, duration: 1 }}
+        className="absolute bottom-12 md:bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center"
+      >
+        <motion.svg
+          width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+          className="text-warm-gray mb-3"
+          animate={{ y: [0, 6, 0] }}
+          transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+        >
+          <path d="M12 19V5M5 12l7 7 7-7" />
+        </motion.svg>
+        <span className="font-display italic text-sm text-warm-gray">scroll</span>
+      </motion.div>
+      
     </section>
   );
 }

@@ -2,8 +2,8 @@
 // 🔐 ALLOWED USERS - Replace with your Gmail addresses
 // ============================================
 export const ALLOWED_USERS = [
-  'your.email@gmail.com',      // User 1 — You
-  'partner.email@gmail.com',   // User 2 — Your Partner
+  'opstarlord521@gmail.com',      // User 1 — You
+  'glaniashajik@gmail.com',   // User 2 — Your Partner
 ];
 
 // ============================================

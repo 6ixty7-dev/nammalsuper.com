@@ -5,15 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { useDarkMode } from '@/hooks/useDarkMode';
 import { NAV_ITEMS } from '@/lib/constants';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
-  const { isDark, toggle: toggleDark } = useDarkMode();
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [musicPlaying, setMusicPlaying] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -26,158 +22,93 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Desktop Navigation */}
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? 'glass shadow-lg shadow-rose-500/5'
-            : 'bg-transparent'
+        transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className={`hidden md:block fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled ? 'glass-card rounded-none border-t-0 border-l-0 border-r-0' : 'bg-transparent'
         }`}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <motion.span
-                className="text-2xl"
-                animate={{ scale: [1, 1.15, 1] }}
-                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-              >
-                💕
-              </motion.span>
-              <span
-                className="text-xl font-bold tracking-tight"
-                style={{ fontFamily: 'var(--font-handwritten)' }}
-              >
-                Our Space
-              </span>
-            </Link>
+        <div className="max-w-7xl mx-auto px-8 h-24 flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-brown group-hover:scale-110 transition-transform">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+            <span className="text-xl tracking-wide font-display italic text-ink-brown">Our Space</span>
+          </Link>
 
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-1">
-              {NAV_ITEMS.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 ${
-                      isActive
-                        ? 'text-rose-600 dark:text-rose-400'
-                        : 'text-soft-black/70 dark:text-dark-text/70'
-                    }`}
-                  >
-                    <span className="mr-1.5">{item.emoji}</span>
-                    {item.label}
-                    {isActive && (
-                      <motion.div
-                        layoutId="nav-indicator"
-                        className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-rose-400 to-rose-600 rounded-full"
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Right Section */}
-            <div className="flex items-center gap-2">
-              {/* Music Toggle */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setMusicPlaying(!musicPlaying)}
-                className="p-2 rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-                title="Toggle music"
-              >
-                {musicPlaying ? '🎵' : '🔇'}
-              </motion.button>
-
-              {/* Dark Mode */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={toggleDark}
-                className="p-2 rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-                title="Toggle dark mode"
-              >
-                {isDark ? '☀️' : '🌙'}
-              </motion.button>
-
-              {/* User Avatar */}
-              {user.user_metadata?.avatar_url && (
-                <motion.img
-                  whileHover={{ scale: 1.1 }}
-                  src={user.user_metadata.avatar_url}
-                  alt="You"
-                  className="w-8 h-8 rounded-full border-2 border-rose-200 dark:border-rose-800 cursor-pointer"
-                  onClick={() => signOut()}
-                  title="Click to sign out"
-                />
-              )}
-
-              {/* Mobile Hamburger */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden p-2 rounded-full hover:bg-rose-50 dark:hover:bg-rose-500/10"
-              >
-                <div className="w-5 flex flex-col gap-1">
-                  <motion.span
-                    animate={mobileOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-                    className="block h-0.5 w-full bg-soft-black dark:bg-dark-text rounded-full"
-                  />
-                  <motion.span
-                    animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
-                    className="block h-0.5 w-full bg-soft-black dark:bg-dark-text rounded-full"
-                  />
-                  <motion.span
-                    animate={mobileOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-                    className="block h-0.5 w-full bg-soft-black dark:bg-dark-text rounded-full"
-                  />
-                </div>
-              </motion.button>
-            </div>
+          {/* Links */}
+          <div className="flex items-center gap-8">
+            {NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`relative py-2 text-sm font-ui transition-colors ${
+                    isActive ? 'text-ink-brown font-medium' : 'text-warm-gray hover:text-ink-brown'
+                  }`}
+                >
+                  {item.label}
+                  {isActive && (
+                    <motion.svg
+                      layoutId="nav-underline"
+                      className="absolute -bottom-1 left-0 right-0 w-full h-[3px] text-antique-gold"
+                      viewBox="0 0 100 10"
+                      preserveAspectRatio="none"
+                    >
+                      <path d="M0 5 Q 50 0 100 5" stroke="currentColor" strokeWidth="2" fill="none" className="animate-[stroke-dashoffset_250ms_linear]" />
+                    </motion.svg>
+                  )}
+                </Link>
+              );
+            })}
+            
+            <button
+              onClick={() => signOut()}
+              className="text-sm font-ui text-warm-gray hover:text-ink-brown transition-colors"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-16 left-0 right-0 z-40 glass shadow-xl md:hidden"
-          >
-            <div className="p-4 flex flex-col gap-1">
-              {NAV_ITEMS.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                        : 'hover:bg-rose-50/50 dark:hover:bg-rose-500/5'
-                    }`}
-                  >
-                    <span className="mr-2">{item.emoji}</span>
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mobile Bottom Tab Bar */}
+      <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 pointer-events-none">
+        <motion.nav
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="glass-card rounded-full px-6 py-4 mx-auto max-w-sm pointer-events-auto shadow-[0_8px_32px_rgba(44,24,16,0.15)]"
+        >
+          <div className="flex items-center justify-between">
+            {NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="relative flex flex-col items-center gap-1 p-2"
+                >
+                  <span className={`text-xl transition-transform duration-300 ${isActive ? 'scale-110' : 'opacity-60'}`}>
+                    {item.emoji}
+                  </span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="mobile-nav-indicator"
+                      className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-antique-gold shadow-[0_0_8px_rgba(201,169,110,0.8)]"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </motion.nav>
+      </div>
     </>
   );
 }

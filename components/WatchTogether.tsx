@@ -4,207 +4,199 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase';
+import ReactPlayer from 'react-player';
 
 export default function WatchTogether() {
   const { user } = useAuth();
   const [videoUrl, setVideoUrl] = useState('');
-  const [embedUrl, setEmbedUrl] = useState('');
+  const [inputUrl, setInputUrl] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
-  const [partnerOnline, setPartnerOnline] = useState(false);
+  const [playedTime, setPlayedTime] = useState(0);
+  const [isPartnerPresent, setIsPartnerPresent] = useState(false);
+  const playerRef = useRef<any>(null);
+  const isInternalChange = useRef(false);
   const supabase = createClient();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const room = useRef<any>(null);
 
-  // Convert YouTube URL to embed URL
-  const convertToEmbed = (url: string): string => {
-    const ytRegex = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(ytRegex);
-    if (match) {
-      return `https://www.youtube.com/embed/${match[1]}?enablejsapi=1`;
-    }
-    return url;
-  };
-
-  // Sync video state via Supabase Realtime
   useEffect(() => {
-    const channel = supabase
-      .channel('watch-together')
-      .on('broadcast', { event: 'video-sync' }, (payload) => {
-        const data = payload.payload;
-        if (data.user !== user?.email) {
-          if (data.action === 'load') {
-            setEmbedUrl(data.url);
-          } else if (data.action === 'play') {
-            setIsPlaying(true);
-          } else if (data.action === 'pause') {
-            setIsPlaying(false);
-          }
+    if (!user) return;
+
+    room.current = supabase.channel('watch-together', {
+      config: { presence: { key: user.email } },
+    });
+
+    room.current
+      .on('presence', { event: 'sync' }, () => {
+        const state = room.current.state;
+        const users = Object.keys(state);
+        setIsPartnerPresent(users.length > 1);
+      })
+      .on('broadcast', { event: 'video-state' }, ({ payload }: any) => {
+        if (payload.sender === user.email) return;
+
+        isInternalChange.current = true;
+        if (payload.type === 'load') {
+          setVideoUrl(payload.url);
+        } else if (payload.type === 'play') {
+          setIsPlaying(true);
+        } else if (payload.type === 'pause') {
+          setIsPlaying(false);
+        } else if (payload.type === 'seek') {
+          playerRef.current?.seekTo(payload.time, 'seconds');
         }
       })
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const users = Object.values(state).flat();
-        setPartnerOnline(users.length > 1);
-      })
-      .subscribe(async (status) => {
+      .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
-          await channel.track({ user: user?.email });
+          await room.current.track({
+            online_at: new Date().toISOString(),
+          });
         }
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(room.current);
     };
-  }, [user?.email, supabase]);
+  }, [user, supabase]);
 
-  const loadVideo = () => {
-    if (!videoUrl.trim()) return;
-    const embed = convertToEmbed(videoUrl);
-    setEmbedUrl(embed);
-
-    // Broadcast to partner
-    supabase.channel('watch-together').send({
+  const broadcast = (payload: any) => {
+    if (!room.current) return;
+    room.current.send({
       type: 'broadcast',
-      event: 'video-sync',
-      payload: { action: 'load', url: embed, user: user?.email },
+      event: 'video-state',
+      payload: { ...payload, sender: user?.email },
     });
   };
 
-  const togglePlay = () => {
-    const next = !isPlaying;
-    setIsPlaying(next);
+  const handleLoad = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputUrl) return;
+    setVideoUrl(inputUrl);
+    broadcast({ type: 'load', url: inputUrl });
+    setInputUrl('');
+  };
 
-    supabase.channel('watch-together').send({
-      type: 'broadcast',
-      event: 'video-sync',
-      payload: { action: next ? 'play' : 'pause', user: user?.email },
-    });
+  const handlePlay = () => {
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    setIsPlaying(true);
+    broadcast({ type: 'play', time: playedTime });
+  };
+
+  const handlePause = () => {
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    setIsPlaying(false);
+    broadcast({ type: 'pause', time: playedTime });
+  };
+
+  const handleSeek = (seconds: number) => {
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    broadcast({ type: 'seek', time: seconds });
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen pt-24 pb-16 px-4 night-zone">
+      <div className="max-w-5xl mx-auto relative z-10">
+        
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
+          className="text-center mb-12"
         >
-          <h1
-            className="text-4xl md:text-5xl gradient-text mb-3"
-            style={{ fontFamily: 'var(--font-handwritten)' }}
-          >
-            Watch Together 🎬
+          <h1 className="text-5xl md:text-6xl font-display italic text-night-text mb-4 tracking-wide">
+            Shared Screen
           </h1>
-          <p className="text-soft-black/50 dark:text-dark-text/50" style={{ fontFamily: 'var(--font-casual)' }}>
-            Movie nights, even when apart ✨
+          <p className="font-handwriting text-xl text-bloom-pink/80">
+            distance means so little
           </p>
-
-          {/* Partner Status */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full glass"
-          >
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                partnerOnline
-                  ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50'
-                  : 'bg-soft-black/20 dark:bg-dark-text/20'
-              }`}
-            />
-            <span className="text-sm text-soft-black/60 dark:text-dark-text/60">
-              {partnerOnline ? 'Your love is here ❤️' : 'Waiting for your love...'}
-            </span>
-          </motion.div>
         </motion.div>
 
-        {/* URL Input */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass rounded-2xl p-4 mb-8 shadow-lg shadow-rose-500/5"
+        {/* Status indicator */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center mb-8"
         >
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="Paste a YouTube link..."
-              className="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-dark-card/50 border border-rose-100 dark:border-rose-800/20 outline-none text-sm focus:ring-2 focus:ring-rose-300 dark:focus:ring-rose-600 transition-all"
-              onKeyDown={(e) => e.key === 'Enter' && loadVideo()}
-            />
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={loadVideo}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-rose-400 to-rose-500 text-white font-medium shadow-lg shadow-rose-500/20 text-sm whitespace-nowrap"
-            >
-              Load Video
-            </motion.button>
+          <div className={`px-6 py-2 rounded-full border ${isPartnerPresent ? 'bg-bloom-pink/10 border-bloom-pink/30 text-bloom-pink' : 'bg-white/5 border-white/10 text-white/40'} flex items-center gap-3 backdrop-blur-md transition-colors duration-500`}>
+            <div className="relative flex h-3 w-3">
+              {isPartnerPresent && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-bloom-pink opacity-75"></span>
+              )}
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${isPartnerPresent ? 'bg-bloom-pink' : 'bg-white/20'}`}></span>
+            </div>
+            <span className="font-ui text-sm uppercase tracking-wider">
+              {isPartnerPresent ? 'Your love is here' : 'Waiting for partner...'}
+            </span>
           </div>
         </motion.div>
 
-        {/* Video Player */}
-        {embedUrl ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="glass rounded-2xl overflow-hidden shadow-2xl shadow-rose-500/10"
-          >
-            {/* Top Bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-rose-100/20 dark:border-rose-800/10">
-              <div className="flex items-center gap-2">
-                <motion.span
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                >
-                  ❤️
-                </motion.span>
-                <span
-                  className="text-sm text-soft-black/60 dark:text-dark-text/60"
-                  style={{ fontFamily: 'var(--font-casual)' }}
-                >
-                  Watching together
-                </span>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={togglePlay}
-                className="px-4 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-sm font-medium"
-              >
-                {isPlaying ? '⏸ Pause' : '▶ Play'}
-              </motion.button>
-            </div>
+        {/* Input area */}
+        <motion.form 
+          onSubmit={handleLoad}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-card p-4 rounded-2xl flex flex-col sm:flex-row gap-4 mb-8 shimmer-glass"
+        >
+          <input
+            type="text"
+            placeholder="Paste a YouTube link here..."
+            value={inputUrl}
+            onChange={(e) => setInputUrl(e.target.value)}
+            className="flex-1 bg-transparent border-b border-white/10 focus:border-amber-glow px-4 py-2 outline-none text-night-text font-ui transition-colors placeholder:text-white/20"
+          />
+          <button type="submit" className="btn-primary shrink-0 bg-amber-glow text-night-bg hover:shadow-[0_0_20px_rgba(240,192,64,0.4)]">
+            Sync Video
+          </button>
+        </motion.form>
 
-            {/* Video */}
-            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-              <iframe
-                ref={iframeRef}
-                src={embedUrl}
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+        {/* Video Player */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="glass-card rounded-3xl overflow-hidden aspect-video shadow-[0_20px_60px_rgba(0,0,0,0.5)] border-t border-white/20 relative"
+        >
+          {videoUrl ? (() => {
+            const Player = ReactPlayer as any;
+            return (
+              <Player
+                ref={playerRef}
+                url={videoUrl}
+                width="100%"
+                height="100%"
+                playing={isPlaying}
+                controls={true}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSeek={handleSeek}
+                onProgress={(p: any) => setPlayedTime(p.playedSeconds)}
+                config={{
+                  youtube: {
+                    disablekb: 1,
+                  },
+                }}
               />
+            );
+          })() : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/30 bg-black/40">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="mb-4 text-white/20">
+                <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4z" />
+                <rect x="3" y="6" width="12" height="12" rx="2" ry="2" />
+              </svg>
+              <p className="font-ui uppercase tracking-widest text-sm">Waiting for a link...</p>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="glass rounded-2xl p-16 text-center shadow-lg shadow-rose-500/5"
-          >
-            <span className="text-6xl block mb-4">🎬</span>
-            <p
-              className="text-soft-black/40 dark:text-dark-text/40"
-              style={{ fontFamily: 'var(--font-casual)', fontSize: '1.1rem' }}
-            >
-              Paste a video link above to start watching together
-            </p>
-          </motion.div>
-        )}
+          )}
+        </motion.div>
+
       </div>
     </div>
   );

@@ -1,111 +1,130 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { getTimelineMonths, STORAGE_BUCKET } from '@/lib/constants';
+import { getTimelineMonths } from '@/lib/constants';
+import TimelinePolaroid from '@/components/TimelinePolaroid';
 
 export default function Timeline() {
-  const months = getTimelineMonths();
+  const chapters = getTimelineMonths();
 
   return (
-    <section className="py-16 px-4 relative">
-      <div className="max-w-4xl mx-auto">
-        {/* Section Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2
-            className="text-4xl md:text-5xl gradient-text mb-3"
-            style={{ fontFamily: 'var(--font-handwritten)' }}
-          >
-            Our Story
-          </h2>
-          <p className="text-soft-black/50 dark:text-dark-text/50">
-            Every month, a new chapter ✨
-          </p>
-        </motion.div>
+    <section className="relative py-24 bg-paper-surface overflow-hidden" id="timeline">
+      {/* Corkboard texture simulation */}
+      <div className="absolute inset-0 opacity-40 mix-blend-multiply pointer-events-none" style={{
+        backgroundImage: `radial-gradient(var(--color-warm-gray) 1px, transparent 1px)`,
+        backgroundSize: '12px 12px'
+      }} />
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Center Line */}
-          <div className="timeline-line hidden md:block" />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-8">
+        
+        <div className="text-center mb-24">
+          <h2 className="text-4xl md:text-5xl font-display italic text-ink-brown">Our Memories</h2>
+          <p className="font-handwriting text-xl text-warm-gray mt-2">a journey through time</p>
+        </div>
 
-          {months.map((month, index) => {
-            const isLeft = index % 2 === 0;
-            const placeholderImages = [
-              `/${STORAGE_BUCKET}/memories/${month.key}/img1.jpg`,
-              `/${STORAGE_BUCKET}/memories/${month.key}/img2.jpg`,
-              `/${STORAGE_BUCKET}/memories/${month.key}/img3.jpg`,
-            ];
-
-            return (
-              <motion.div
-                key={month.key}
-                initial={{ opacity: 0, x: isLeft ? -60 : 60 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                className={`relative mb-16 md:mb-24 ${
-                  isLeft
-                    ? 'md:pr-[55%]'
-                    : 'md:pl-[55%]'
-                }`}
-              >
-                {/* Timeline Dot */}
-                <div className="timeline-dot hidden md:block" style={{ top: '24px' }} />
-
-                {/* Card */}
+        {/* MOBILE: Horizontal Scroll Timeline */}
+        <div className="md:hidden relative pb-12">
+          {/* Horizontal Line */}
+          <div className="absolute top-[180px] left-0 right-0 h-0.5 bg-ink-brown/20 z-0" />
+          
+          <div className="flex overflow-x-auto gap-12 snap-x snap-mandatory hide-scrollbar relative z-10 px-4 pt-10">
+            {chapters.map((chapter, idx) => {
+              const rotate = idx % 2 === 0 ? '-rotate-2' : 'rotate-2';
+              return (
                 <motion.div
-                  whileHover={{ y: -4 }}
-                  transition={{ duration: 0.3 }}
-                  className="glass rounded-2xl p-6 shadow-lg shadow-rose-500/5 relative overflow-hidden"
+                  key={chapter.key}
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  className="flex-shrink-0 w-[280px] snap-center flex flex-col items-center"
                 >
-                  {/* Month Header */}
-                  <div className="flex items-baseline gap-3 mb-4">
-                    <h3
-                      className="text-2xl md:text-3xl gradient-text"
-                      style={{ fontFamily: 'var(--font-handwritten)' }}
-                    >
-                      {month.label}
-                    </h3>
-                    <span className="text-sm text-soft-black/40 dark:text-dark-text/40">
-                      {month.year}
-                    </span>
+                  {/* Washi Tape / Timeline Node on the line */}
+                  <div className="mb-8 relative flex flex-col items-center">
+                    <div className="w-3 h-3 rounded-full bg-dusty-rose shadow-md mb-2 border-2 border-paper-bg z-20" />
+                    <div className="w-24 h-7 bg-paper-bg/90 shadow-sm rotate-[-3deg] backdrop-blur-sm flex items-center justify-center relative border border-warm-sand/50" style={{ clipPath: 'polygon(0% 5%, 100% 0%, 98% 95%, 2% 100%)' }}>
+                      <span className="font-handwriting text-ink-brown">{chapter.label} {chapter.year}</span>
+                    </div>
                   </div>
-
-                  {/* Image Grid */}
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {placeholderImages.map((src, imgIndex) => (
-                      <motion.div
-                        key={imgIndex}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: imgIndex * 0.1 }}
-                        className="image-placeholder aspect-square rounded-xl"
-                        title={src}
-                      >
-                        <span className="relative z-10">📷</span>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {/* Caption */}
-                  <p
-                    className="text-sm text-soft-black/60 dark:text-dark-text/60 italic"
-                    style={{ fontFamily: 'var(--font-casual)', fontSize: '1rem' }}
-                  >
-                    Add your memories for {month.label} {month.year}...
-                  </p>
-
-                  {/* Decorative Corner */}
-                  <div className="absolute -top-1 -right-1 text-rose-200/30 dark:text-rose-500/10 text-4xl">
-                    ♡
-                  </div>
+                  
+                  <TimelinePolaroid 
+                    monthKey={chapter.key}
+                    label={chapter.label}
+                    rotateClass={rotate}
+                  />
                 </motion.div>
-              </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* DESKTOP: Vertical Alternating Timeline */}
+        <div className="hidden md:block relative max-w-4xl mx-auto">
+          {/* Vertical Center Line */}
+          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-ink-brown/20 z-0" />
+
+          {chapters.map((chapter, idx) => {
+            const isLeft = idx % 2 === 0;
+            const rotate = isLeft ? '-rotate-2' : 'rotate-2';
+            
+            return (
+              <div key={chapter.key} className="relative flex items-center justify-between mb-32 w-full">
+                
+                {/* Left Side */}
+                <div className="w-5/12 flex justify-end">
+                  {isLeft && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-100px" }}
+                      className={`w-full max-w-sm origin-bottom-right`}
+                    >
+                      <TimelinePolaroid 
+                        monthKey={chapter.key}
+                        label={chapter.label}
+                        rotateClass={rotate}
+                      />
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Center Node (Timeline Point) */}
+                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20">
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    className="w-4 h-4 rounded-full bg-dusty-rose shadow-[0_0_0_4px_var(--color-paper-surface)] border border-ink-brown/10 mb-3"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    className="w-32 h-8 bg-paper-bg shadow-md rotate-[-2deg] flex items-center justify-center relative border border-warm-sand/30"
+                    style={{ clipPath: 'polygon(0% 5%, 100% 0%, 98% 95%, 2% 100%)' }}
+                  >
+                    <span className="font-handwriting text-lg text-ink-brown">{chapter.label} {chapter.year}</span>
+                  </motion.div>
+                </div>
+
+                {/* Right Side */}
+                <div className="w-5/12 flex justify-start">
+                  {!isLeft && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: "-100px" }}
+                      className={`w-full max-w-sm origin-bottom-left`}
+                    >
+                      <TimelinePolaroid 
+                        monthKey={chapter.key}
+                        label={chapter.label}
+                        rotateClass={rotate}
+                      />
+                    </motion.div>
+                  )}
+                </div>
+
+              </div>
             );
           })}
         </div>

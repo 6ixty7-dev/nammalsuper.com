@@ -1,31 +1,28 @@
 import type { Metadata } from "next";
-import { Inter, Dancing_Script, Caveat, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, Caveat, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 
-const inter = Inter({
-  variable: "--font-inter",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-display",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
-});
-
-const dancingScript = Dancing_Script({
-  variable: "--font-dancing",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 const caveat = Caveat({
-  variable: "--font-caveat",
+  variable: "--font-handwriting",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const dmSans = DM_Sans({
+  variable: "--font-ui",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -43,14 +40,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${dancingScript.variable} ${caveat.variable} ${playfair.variable}`}
+      className={`${cormorant.variable} ${caveat.variable} ${dmSans.variable}`}
       suppressHydrationWarning
     >
       <head>
-        <meta name="theme-color" content="#fdf6f0" />
+        <meta name="theme-color" content="#FAF7F2" />
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💕</text></svg>" />
       </head>
-      <body className="min-h-screen">
+      <body className="min-h-screen bg-paper-bg text-ink-brown font-ui selection:bg-antique-gold/20 antialiased overflow-x-hidden">
         <AuthProvider>
           {children}
         </AuthProvider>

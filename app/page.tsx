@@ -50,11 +50,14 @@ export default function HomePage() {
       <Navbar />
       <main className="relative z-10">
         <Hero />
-        <DaysCounter />
 
         {/* Decorative separator */}
-        <div className="max-w-xs mx-auto py-4">
-          <div className="h-px bg-gradient-to-r from-transparent via-rose-300/30 to-transparent" />
+        <div className="max-w-xs mx-auto py-12 md:py-24">
+          <div className="flex items-center justify-center gap-4">
+            <div className="h-px w-16 bg-warm-sand" />
+            <span className="text-warm-gray opacity-50 text-xl">✤</span>
+            <div className="h-px w-16 bg-warm-sand" />
+          </div>
         </div>
 
         <Timeline />

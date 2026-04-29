@@ -61,7 +61,7 @@ export default function LetterSystem() {
 
     const { error } = await supabase.from('letters').insert({
       sender: user.email,
-      receiver: 'partner', // Will be resolved server-side or by the other user's email
+      receiver: 'partner', 
       message: newMessage.trim(),
       is_read: false,
     });
@@ -77,9 +77,6 @@ export default function LetterSystem() {
     setSelectedLetter(letter);
     setEnvelopeOpen(false);
 
-    // Small delay then open envelope
-    setTimeout(() => setEnvelopeOpen(true), 500);
-
     // Mark as read
     if (!letter.is_read && letter.receiver === user?.email) {
       await supabase
@@ -94,58 +91,38 @@ export default function LetterSystem() {
   ).length;
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen pt-24 pb-16 px-4 night-zone">
+      <div className="max-w-4xl mx-auto relative z-10">
+        
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
-          <h1
-            className="text-4xl md:text-5xl gradient-text mb-3"
-            style={{ fontFamily: 'var(--font-handwritten)' }}
-          >
-            Love Letters 💌
+          <h1 className="text-5xl md:text-6xl font-display italic text-night-text mb-4 tracking-wide">
+            Midnight Letters
           </h1>
-          <p className="text-soft-black/50 dark:text-dark-text/50" style={{ fontFamily: 'var(--font-casual)' }}>
-            Words from the heart
+          <p className="font-handwriting text-xl text-amber-glow/80">
+            words spoken in the quiet hours
           </p>
-          {unreadCount > 0 && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-sm"
-            >
-              <motion.span
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-              >
-                💌
-              </motion.span>
-              You have {unreadCount} new letter{unreadCount > 1 ? 's' : ''}!
-            </motion.div>
-          )}
         </motion.div>
 
         {/* Compose Button */}
         <motion.button
-          whileHover={{ scale: 1.03, y: -2 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setShowCompose(true)}
-          className="w-full mb-8 p-5 rounded-2xl glass shadow-lg shadow-rose-500/5 text-center cursor-pointer group"
+          className="w-full max-w-lg mx-auto mb-16 py-6 px-8 glass-card flex flex-col items-center justify-center gap-3 cursor-pointer group shimmer-glass block"
         >
-          <span className="text-lg group-hover:scale-110 inline-block transition-transform mr-2">✍️</span>
-          <span
-            className="text-soft-black/70 dark:text-dark-text/70 font-medium"
-            style={{ fontFamily: 'var(--font-casual)', fontSize: '1.1rem' }}
-          >
-            Write a letter to your love...
+          <span className="text-2xl opacity-70 group-hover:opacity-100 transition-opacity">✍️</span>
+          <span className="font-ui text-sm tracking-widest uppercase text-night-text/70 group-hover:text-amber-glow transition-colors">
+            Draft a new letter
           </span>
         </motion.button>
 
         {/* Letters Grid */}
-        <div className="grid gap-4">
+        <div className="grid md:grid-cols-2 gap-8">
           {letters.map((letter, index) => {
             const isSender = letter.sender === user?.email;
             return (
@@ -153,63 +130,129 @@ export default function LetterSystem() {
                 key={letter.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -2 }}
+                transition={{ delay: index * 0.1 }}
                 onClick={() => openLetter(letter)}
-                className={`glass rounded-2xl p-5 cursor-pointer shadow-lg shadow-rose-500/5 relative overflow-hidden ${
-                  !letter.is_read && !isSender
-                    ? 'ring-2 ring-rose-300 dark:ring-rose-500/30'
-                    : ''
+                className={`glass-card p-6 cursor-pointer group ${
+                  !letter.is_read && !isSender ? 'ring-1 ring-bloom-pink/50 shadow-[0_0_20px_rgba(255,155,174,0.15)]' : ''
                 }`}
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between mb-8">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{isSender ? '📤' : '📩'}</span>
-                      <span className="text-sm font-medium text-soft-black/70 dark:text-dark-text/70">
-                        {isSender ? 'You wrote' : 'You received'}
+                    <div className="flex items-center gap-3 mb-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isSender ? 'text-white/40' : 'text-amber-glow'}>
+                        {isSender ? (
+                          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                        ) : (
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6" />
+                        )}
+                      </svg>
+                      <span className="font-ui text-xs tracking-wider uppercase text-white/50">
+                        {isSender ? 'Sent' : 'Received'}
                       </span>
-                      {!letter.is_read && !isSender && (
-                        <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
-                          New
-                        </span>
-                      )}
                     </div>
-                    <p
-                      className="text-soft-black/50 dark:text-dark-text/50 text-sm truncate max-w-xs"
-                      style={{ fontFamily: 'var(--font-casual)' }}
-                    >
-                      {letter.message.slice(0, 80)}...
-                    </p>
+                    {!letter.is_read && !isSender && (
+                      <span className="inline-block mt-1 font-handwriting text-bloom-pink text-sm">
+                        unopened
+                      </span>
+                    )}
                   </div>
-                  <span className="text-xs text-soft-black/30 dark:text-dark-text/30 whitespace-nowrap">
-                    {new Date(letter.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                  <span className="font-ui text-xs text-white/30">
+                    {new Date(letter.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
+                </div>
+
+                <div className="mt-auto">
+                  <button className="w-full py-3 rounded-full border border-white/10 text-white/60 font-ui text-sm group-hover:bg-white/5 group-hover:text-amber-glow transition-all">
+                    {isSender ? 'Read your letter' : 'Break the seal'}
+                  </button>
                 </div>
               </motion.div>
             );
           })}
-
-          {letters.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16 glass rounded-2xl"
-            >
-              <span className="text-5xl block mb-4">💌</span>
-              <p
-                className="text-soft-black/40 dark:text-dark-text/40"
-                style={{ fontFamily: 'var(--font-casual)', fontSize: '1.1rem' }}
-              >
-                No letters yet... Write the first one!
-              </p>
-            </motion.div>
-          )}
         </div>
       </div>
+
+      {/* Letter Reading Modal */}
+      <AnimatePresence>
+        {selectedLetter && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0814]/80 backdrop-blur-md"
+            onClick={() => { setSelectedLetter(null); setEnvelopeOpen(false); }}
+          >
+            <motion.div
+              initial={{ y: 50, scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg flex flex-col items-center justify-center h-full"
+            >
+              
+              {!envelopeOpen ? (
+                // Pre-open Envelope State
+                <motion.div 
+                  className="relative cursor-pointer float-subtle"
+                  onClick={() => setEnvelopeOpen(true)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="w-[320px] h-[200px] bg-[#E8DDD0] rounded-sm relative shadow-2xl flex items-center justify-center overflow-hidden" style={{ clipPath: 'polygon(0 0, 50% 50%, 100% 0, 100% 100%, 0 100%)' }}>
+                    <div className="absolute inset-0 bg-noise opacity-30 mix-blend-multiply" />
+                  </div>
+                  {/* Flap */}
+                  <div className="absolute top-0 left-0 w-full h-[120px] bg-[#F5EFE6] origin-top shadow-[0_4px_10px_rgba(0,0,0,0.1)] z-10" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }}>
+                    <div className="absolute inset-0 bg-noise opacity-30 mix-blend-multiply" />
+                  </div>
+                  {/* Wax Seal */}
+                  <motion.div 
+                    className="absolute top-[100px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[#8B0000] z-20 flex items-center justify-center shadow-[0_4px_10px_rgba(139,0,0,0.4)] border border-[#5c0000]"
+                    animate={{ boxShadow: ['0 0 0 rgba(139,0,0,0)', '0 0 20px rgba(139,0,0,0.6)', '0 0 0 rgba(139,0,0,0)'] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                  >
+                    <span className="font-display italic text-white/80 text-xl">L</span>
+                    {/* Shimmer sweep */}
+                    <div className="absolute inset-0 rounded-full overflow-hidden">
+                      <div className="w-[200%] h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer-sweep_2s_infinite]" />
+                    </div>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                // Opened Letter State
+                <motion.div
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  className="paper-card p-10 md:p-14 w-full relative"
+                >
+                  {/* Ruled lines background */}
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #2C1810 32px)' }} />
+                  
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-antique-gold mx-auto mb-8">
+                    <path d="M12 2L15 8L22 9L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9L9 8L12 2Z" />
+                  </svg>
+
+                  <p className="font-handwriting text-ink-brown text-2xl md:text-3xl leading-[32px] whitespace-pre-wrap relative z-10">
+                    {selectedLetter.message}
+                  </p>
+
+                  <div className="mt-16 text-center">
+                    <button 
+                      onClick={() => { setSelectedLetter(null); setEnvelopeOpen(false); }}
+                      className="btn-ghost text-sm"
+                    >
+                      Fold & Keep
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Compose Modal */}
       <AnimatePresence>
@@ -218,22 +261,18 @@ export default function LetterSystem() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0814]/80 backdrop-blur-md"
             onClick={() => setShowCompose(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 30 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              initial={{ y: 50, scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 20, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="paper-texture rounded-2xl p-8 max-w-lg w-full shadow-2xl"
+              className="paper-card p-8 md:p-12 max-w-lg w-full"
             >
-              <h2
-                className="text-3xl gradient-text mb-6 text-center"
-                style={{ fontFamily: 'var(--font-handwritten)' }}
-              >
-                Write Your Heart Out 💕
+              <h2 className="text-4xl font-display italic text-ink-brown mb-6 text-center">
+                Pour your heart out
               </h2>
 
               <textarea
@@ -241,90 +280,25 @@ export default function LetterSystem() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="My dearest..."
-                className="w-full h-48 bg-transparent border-none outline-none resize-none text-soft-black/80 dark:text-dark-text/80 placeholder:text-soft-black/20 dark:placeholder:text-dark-text/20"
-                style={{ fontFamily: 'var(--font-casual)', fontSize: '1.1rem', lineHeight: '28px' }}
+                className="w-full h-48 bg-transparent border-none outline-none resize-none text-ink-brown placeholder:text-warm-gray/40 font-handwriting text-2xl leading-[32px]"
                 autoFocus
               />
 
-              <div className="flex justify-between items-center mt-6 pt-4 border-t border-rose-100/30 dark:border-rose-800/20">
+              <div className="flex justify-between items-center mt-8 pt-6 border-t border-warm-sand">
                 <button
                   onClick={() => setShowCompose(false)}
-                  className="px-5 py-2 rounded-xl text-soft-black/50 dark:text-dark-text/50 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors text-sm"
+                  className="font-ui text-warm-gray text-sm hover:text-ink-brown transition-colors"
                 >
-                  Cancel
+                  Discard
                 </button>
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                <button
                   onClick={sendLetter}
                   disabled={!newMessage.trim() || sending}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-400 to-rose-500 text-white font-medium shadow-lg shadow-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="btn-primary"
                 >
-                  {sending ? 'Sending...' : 'Send with Love 💌'}
-                </motion.button>
+                  {sending ? 'Sealing...' : 'Seal with Wax'}
+                </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Letter Reading Modal (Envelope) */}
-      <AnimatePresence>
-        {selectedLetter && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-            onClick={() => { setSelectedLetter(null); setEnvelopeOpen(false); }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              onClick={(e) => e.stopPropagation()}
-              className="max-w-lg w-full"
-            >
-              {/* Envelope */}
-              <div className={`envelope mx-auto mb-8 ${envelopeOpen ? 'open' : ''}`}>
-                <div className="envelope-flap" />
-                <div className="envelope-heart">💕</div>
-              </div>
-
-              {/* Letter Content */}
-              <AnimatePresence>
-                {envelopeOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 40, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: 0.5, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                    className="paper-texture rounded-2xl p-8 shadow-2xl"
-                  >
-                    <p
-                      className="text-soft-black/80 dark:text-dark-text/80 whitespace-pre-wrap leading-relaxed"
-                      style={{ fontFamily: 'var(--font-casual)', fontSize: '1.15rem', lineHeight: '30px' }}
-                    >
-                      {selectedLetter.message}
-                    </p>
-
-                    <div className="mt-6 pt-4 border-t border-rose-100/30 dark:border-rose-800/20 flex justify-between items-center">
-                      <span
-                        className="text-sm text-soft-black/40 dark:text-dark-text/40 italic"
-                        style={{ fontFamily: 'var(--font-casual)' }}
-                      >
-                        — with love ♡
-                      </span>
-                      <span className="text-xs text-soft-black/30 dark:text-dark-text/30">
-                        {new Date(selectedLetter.created_at).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}
