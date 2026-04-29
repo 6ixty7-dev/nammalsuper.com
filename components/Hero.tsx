@@ -2,9 +2,16 @@
 
 import { motion } from 'framer-motion';
 import { useDaysCounter } from '@/hooks/useDaysCounter';
+import { usePartner } from '@/hooks/usePartner';
+import { usePresence, formatLastSeen } from '@/hooks/usePresence';
 
 export default function Hero() {
   const { days, hours, minutes, seconds } = useDaysCounter();
+  const { partner, myProfile } = usePartner();
+  const { isPartnerOnline, partnerLastSeen } = usePresence('/');
+
+  const myName = myProfile?.name || 'You';
+  const partnerName = partner?.name || 'Your Love';
 
   return (
     <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-4 overflow-hidden pt-12 md:pt-24 bg-noise">
@@ -38,8 +45,21 @@ export default function Hero() {
             Our Story
           </h1>
           <p className="mt-4 font-handwriting text-xl md:text-2xl text-warm-gray transform rotate-1">
-            since the beginning...
+            {myName} & {partnerName} — since the beginning...
           </p>
+
+          {/* Partner Status */}
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <div className="relative flex h-2 w-2">
+              {isPartnerOnline && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+              )}
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${isPartnerOnline ? 'bg-green-500' : 'bg-warm-gray/40'}`} />
+            </div>
+            <span className="font-ui text-xs text-warm-gray/60">
+              {isPartnerOnline ? `${partnerName} is here with you ❤️` : `${partnerName} was here ${formatLastSeen(partnerLastSeen)}`}
+            </span>
+          </div>
         </motion.div>
 
         {/* Floating Counter Pill */}

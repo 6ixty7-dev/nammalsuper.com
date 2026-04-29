@@ -67,6 +67,7 @@ export function getTimelineMonths(): { key: string; label: string; year: number;
 // ============================================
 export const NAV_ITEMS = [
   { label: 'Home', href: '/', emoji: '🏠' },
+  { label: 'Chat', href: '/chat', emoji: '💬' },
   { label: 'Letters', href: '/letters', emoji: '💌' },
   { label: 'Watch', href: '/watch', emoji: '🎬' },
   { label: 'Games', href: '/games', emoji: '🎮' },

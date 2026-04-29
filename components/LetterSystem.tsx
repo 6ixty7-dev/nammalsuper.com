@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/hooks/usePartner';
 import { createClient } from '@/lib/supabase';
 
 interface Letter {
@@ -16,14 +17,19 @@ interface Letter {
 
 export default function LetterSystem() {
   const { user } = useAuth();
+  const { partner } = usePartner();
   const [letters, setLetters] = useState<Letter[]>([]);
   const [showCompose, setShowCompose] = useState(false);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [envelopeOpen, setEnvelopeOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [newLetterNotification, setNewLetterNotification] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
+
+  const partnerEmail = partner?.email || '';
+  const partnerName = partner?.name || 'Your Love';
 
   // Fetch letters
   useEffect(() => {
@@ -45,8 +51,26 @@ export default function LetterSystem() {
       .channel('letters-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'letters' },
-        () => fetchLetters()
+        { event: 'INSERT', schema: 'public', table: 'letters' },
+        (payload) => {
+          const newLetter = payload.new as Letter;
+          // Show notification if letter is for us
+          if (newLetter.receiver === user.email) {
+            setNewLetterNotification(true);
+            setTimeout(() => setNewLetterNotification(false), 5000);
+          }
+          setLetters((prev) => [newLetter, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'letters' },
+        (payload) => {
+          const updated = payload.new as Letter;
+          setLetters((prev) =>
+            prev.map((l) => (l.id === updated.id ? updated : l))
+          );
+        }
       )
       .subscribe();
 
@@ -56,12 +80,12 @@ export default function LetterSystem() {
   }, [user?.email, supabase]);
 
   const sendLetter = async () => {
-    if (!newMessage.trim() || !user?.email) return;
+    if (!newMessage.trim() || !user?.email || !partnerEmail) return;
     setSending(true);
 
     const { error } = await supabase.from('letters').insert({
       sender: user.email,
-      receiver: 'partner', 
+      receiver: partnerEmail,
       message: newMessage.trim(),
       is_read: false,
     });
@@ -94,6 +118,24 @@ export default function LetterSystem() {
     <div className="min-h-screen pt-24 pb-16 px-4 night-zone">
       <div className="max-w-4xl mx-auto relative z-10">
         
+        {/* New Letter Notification */}
+        <AnimatePresence>
+          {newLetterNotification && (
+            <motion.div
+              initial={{ opacity: 0, y: -50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+              className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-bloom-pink/20 border border-bloom-pink/40 backdrop-blur-xl text-bloom-pink px-8 py-4 rounded-2xl shadow-[0_8px_32px_rgba(255,155,174,0.3)] flex items-center gap-3"
+            >
+              <span className="text-2xl">💌</span>
+              <div>
+                <p className="font-ui text-sm font-medium">New letter from {partnerName}!</p>
+                <p className="font-handwriting text-xs text-bloom-pink/70">A sealed envelope awaits...</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -106,6 +148,15 @@ export default function LetterSystem() {
           <p className="font-handwriting text-xl text-amber-glow/80">
             words spoken in the quiet hours
           </p>
+          {unreadCount > 0 && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bloom-pink/10 border border-bloom-pink/30"
+            >
+              <span className="text-bloom-pink font-ui text-sm">{unreadCount} unread letter{unreadCount > 1 ? 's' : ''} 💌</span>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Compose Button */}
@@ -117,7 +168,7 @@ export default function LetterSystem() {
         >
           <span className="text-2xl opacity-70 group-hover:opacity-100 transition-opacity">✍️</span>
           <span className="font-ui text-sm tracking-widest uppercase text-night-text/70 group-hover:text-amber-glow transition-colors">
-            Draft a new letter
+            Write to {partnerName}
           </span>
         </motion.button>
 
@@ -147,7 +198,7 @@ export default function LetterSystem() {
                         )}
                       </svg>
                       <span className="font-ui text-xs tracking-wider uppercase text-white/50">
-                        {isSender ? 'Sent' : 'Received'}
+                        {isSender ? `Sent to ${partnerName}` : `From ${partnerName}`}
                       </span>
                     </div>
                     {!letter.is_read && !isSender && (
@@ -234,6 +285,11 @@ export default function LetterSystem() {
                     <path d="M12 2L15 8L22 9L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9L9 8L12 2Z" />
                   </svg>
 
+                  {/* From label */}
+                  <p className="font-ui text-sm text-warm-gray/60 text-center mb-6">
+                    {selectedLetter.sender === user?.email ? `You wrote to ${partnerName}` : `From ${partnerName}, with love`}
+                  </p>
+
                   <p className="font-handwriting text-ink-brown text-2xl md:text-3xl leading-[32px] whitespace-pre-wrap relative z-10">
                     {selectedLetter.message}
                   </p>
@@ -271,9 +327,12 @@ export default function LetterSystem() {
               onClick={(e) => e.stopPropagation()}
               className="paper-card p-8 md:p-12 max-w-lg w-full"
             >
-              <h2 className="text-4xl font-display italic text-ink-brown mb-6 text-center">
+              <h2 className="text-4xl font-display italic text-ink-brown mb-2 text-center">
                 Pour your heart out
               </h2>
+              <p className="text-center font-ui text-sm text-warm-gray/60 mb-6">
+                To: {partnerName} 💌
+              </p>
 
               <textarea
                 ref={textareaRef}

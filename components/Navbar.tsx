@@ -1,16 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/hooks/usePartner';
+import { usePresence, formatLastSeen } from '@/hooks/usePresence';
 import { NAV_ITEMS } from '@/lib/constants';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
+  const { partner } = usePartner();
   const pathname = usePathname();
+  const { isPartnerOnline, partnerLastSeen } = usePresence(pathname || '/');
+  const [scrolled, setScrolled] = useState(false);
+
+  const partnerName = partner?.name || 'Love';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -32,13 +38,28 @@ export default function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-8 h-24 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-brown group-hover:scale-110 transition-transform">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-            </svg>
-            <span className="text-xl tracking-wide font-display italic text-ink-brown">Our Space</span>
-          </Link>
+          {/* Logo + Presence */}
+          <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-3 group">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-brown group-hover:scale-110 transition-transform">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <span className="text-xl tracking-wide font-display italic text-ink-brown">Our Space</span>
+            </Link>
+
+            {/* Partner Presence - Desktop */}
+            <div className="flex items-center gap-2 ml-4 px-3 py-1.5 rounded-full bg-paper-surface/50">
+              <div className="relative flex h-2 w-2">
+                {isPartnerOnline && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+                )}
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isPartnerOnline ? 'bg-green-500' : 'bg-warm-gray/40'}`} />
+              </div>
+              <span className="text-xs font-ui text-warm-gray">
+                {isPartnerOnline ? `${partnerName} is here ❤️` : `${partnerName} · ${formatLastSeen(partnerLastSeen)}`}
+              </span>
+            </div>
+          </div>
 
           {/* Links */}
           <div className="flex items-center gap-8">
@@ -108,6 +129,21 @@ export default function Navbar() {
             })}
           </div>
         </motion.nav>
+
+        {/* Mobile Presence Bar */}
+        <div className="flex justify-center mt-2">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-bg/80 backdrop-blur-md pointer-events-auto">
+            <div className="relative flex h-1.5 w-1.5">
+              {isPartnerOnline && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+              )}
+              <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isPartnerOnline ? 'bg-green-500' : 'bg-warm-gray/40'}`} />
+            </div>
+            <span className="text-[10px] font-ui text-warm-gray">
+              {isPartnerOnline ? `${partnerName} online` : 'offline'}
+            </span>
+          </div>
+        </div>
       </div>
     </>
   );

@@ -25,7 +25,12 @@ export default function TimelinePolaroid({ monthKey, label, rotateClass }: Timel
       .list(folderPath, { limit: 10, sortBy: { column: 'created_at', order: 'asc' } });
 
     if (data && !error) {
-      const validFiles = data.filter(file => file.name !== '.emptyFolderPlaceholder' && file.id);
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.avif'];
+      const validFiles = data.filter(file => {
+        if (!file.name || file.name === '.emptyFolderPlaceholder') return false;
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        return imageExtensions.includes(ext);
+      });
       const urls = validFiles.map(file => {
         return supabase.storage.from('couple-memories').getPublicUrl(`${folderPath}/${file.name}`).data.publicUrl;
       });

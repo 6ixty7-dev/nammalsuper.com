@@ -16,7 +16,7 @@ export default function Gallery() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [selectedImg, setSelectedImg] = useState<GalleryImage | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     const fetchGallery = async () => {
@@ -25,8 +25,13 @@ export default function Gallery() {
         .list('gallery', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
       if (data && !error) {
-        // Filter out any hidden system files or folders like .emptyFolderPlaceholder
-        const validFiles = data.filter(file => file.name !== '.emptyFolderPlaceholder' && file.id);
+        // Filter system files and accept ALL image formats (.jpg, .jpeg, .png, .webp, .gif, .heic, .avif)
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.avif', '.bmp', '.svg'];
+        const validFiles = data.filter(file => {
+          if (!file.name || file.name === '.emptyFolderPlaceholder') return false;
+          const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+          return imageExtensions.includes(ext);
+        });
         
         const mapped = validFiles.map((file, idx) => {
           const { data: { publicUrl } } = supabase.storage
@@ -42,6 +47,8 @@ export default function Gallery() {
           };
         });
         setImages(mapped);
+      } else if (error) {
+        console.error('Gallery fetch error:', error);
       }
       setLoading(false);
     };
