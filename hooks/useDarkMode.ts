@@ -8,6 +8,7 @@ export function useDarkMode() {
   useEffect(() => {
     const saved = localStorage.getItem('our-space-dark-mode');
     if (saved === 'true') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsDark(true);
       document.documentElement.classList.add('dark');
     }

@@ -78,7 +78,7 @@ export default function Gallery() {
         ) : images.length === 0 ? (
           <div className="text-center py-20">
             <p className="font-handwriting text-2xl text-warm-gray">No moments uploaded yet...</p>
-            <p className="font-ui text-sm mt-4 text-warm-gray/60">Upload images to the 'gallery' folder in your Supabase bucket.</p>
+            <p className="font-ui text-sm mt-4 text-warm-gray/60">Upload images to the &apos;gallery&apos; folder in your Supabase bucket.</p>
           </div>
         ) : (
           /* Masonry Grid Simulation using Columns */

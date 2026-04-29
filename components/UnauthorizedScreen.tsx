@@ -19,14 +19,14 @@ export default function UnauthorizedScreen() {
           key={i}
           className="absolute text-rose-200/20"
           style={{
-            left: `${Math.random() * 100}%`,
-            fontSize: 12 + Math.random() * 20,
+            left: `${((i * 17) % 100)}%`,
+            fontSize: 12 + ((i * 13) % 20),
           }}
           initial={{ y: '110vh', rotate: 0 }}
           animate={{ y: '-10vh', rotate: 360 }}
           transition={{
             repeat: Infinity,
-            duration: 10 + Math.random() * 8,
+            duration: 10 + ((i * 7) % 8),
             delay: i * 1.5,
             ease: 'linear',
           }}

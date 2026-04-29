@@ -46,7 +46,7 @@ export function getTimelineMonths(): { key: string; label: string; year: number;
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
-  let current = new Date(start);
+  const current = new Date(start);
   while (current <= now) {
     const m = current.getMonth();
     const y = current.getFullYear();

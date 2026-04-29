@@ -18,6 +18,21 @@ export default function TimelinePolaroid({ monthKey, label, rotateClass }: Timel
   const containerRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
+  const fetchImages = async () => {
+    const folderPath = `memories/${monthKey}`;
+    const { data, error } = await supabase.storage
+      .from('couple-memories')
+      .list(folderPath, { limit: 10, sortBy: { column: 'created_at', order: 'asc' } });
+
+    if (data && !error) {
+      const validFiles = data.filter(file => file.name !== '.emptyFolderPlaceholder' && file.id);
+      const urls = validFiles.map(file => {
+        return supabase.storage.from('couple-memories').getPublicUrl(`${folderPath}/${file.name}`).data.publicUrl;
+      });
+      setImages(urls);
+    }
+  };
+
   // Intersection Observer to lazy load the fetch request
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -36,21 +51,6 @@ export default function TimelinePolaroid({ monthKey, label, rotateClass }: Timel
 
     return () => observer.disconnect();
   }, [hasFetched]);
-
-  const fetchImages = async () => {
-    const folderPath = `memories/${monthKey}`;
-    const { data, error } = await supabase.storage
-      .from('couple-memories')
-      .list(folderPath, { limit: 10, sortBy: { column: 'created_at', order: 'asc' } });
-
-    if (data && !error) {
-      const validFiles = data.filter(file => file.name !== '.emptyFolderPlaceholder' && file.id);
-      const urls = validFiles.map(file => {
-        return supabase.storage.from('couple-memories').getPublicUrl(`${folderPath}/${file.name}`).data.publicUrl;
-      });
-      setImages(urls);
-    }
-  };
 
   // Slideshow interval
   useEffect(() => {

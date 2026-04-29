@@ -36,29 +36,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Set up the auth state listener FIRST, before checking session.
+    // This ensures we don't miss any auth events (like SIGNED_IN after OAuth redirect).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log("Auth event:", event, currentSession?.user?.email);
+        
+        if (!mounted) return;
+
+        if (currentSession) {
+          // Use the session data directly from the event.
+          // Do NOT call getUser() inside onAuthStateChange — it can cause deadlocks.
+          setSession(currentSession);
+          setUser(currentSession.user);
+        } else {
+          setSession(null);
+          setUser(null);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    // Then check for existing session
     const checkSession = async () => {
       try {
-        console.log("Checking session...");
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log("Checking initial session...");
+        const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError) throw sessionError;
-
-        if (session) {
-          // Strict validation
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
-          if (userError) throw userError;
-
-          if (mounted) {
-            setSession(session);
-            setUser(user);
-            console.log("Session found for user:", user?.email);
-          }
-        } else {
+        if (sessionError) {
+          console.error("Session check error:", sessionError);
           if (mounted) {
             setSession(null);
             setUser(null);
-            console.log("No session found in storage.");
+            setIsLoading(false);
           }
+          return;
+        }
+
+        if (existingSession) {
+          // Validate with getUser() for security
+          const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.error("User validation error:", userError);
+            if (mounted) {
+              setSession(null);
+              setUser(null);
+              setIsLoading(false);
+            }
+            return;
+          }
+
+          if (mounted) {
+            setSession(existingSession);
+            setUser(validatedUser);
+            console.log("Session found for:", validatedUser?.email);
+          }
+        } else {
+          console.log("No existing session found.");
         }
       } catch (err) {
         console.error("Auth error during initial check:", err);
@@ -73,48 +108,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     checkSession();
 
-    // Listen for auth state changes (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth event triggered:", event);
-        if (session) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (mounted) {
-            setSession(session);
-            setUser(user);
-            setIsLoading(false);
-          }
-        } else {
-          if (mounted) {
-            setSession(null);
-            setUser(null);
-            setIsLoading(false);
-          }
-        }
-      }
-    );
-
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const signInWithGoogle = useCallback(async () => {
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        // Safely redirect to the current origin
-        redirectTo: `${window.location.origin`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
-  }, [supabase.auth]);
+    if (error) {
+      console.error("OAuth sign-in error:", error);
+    }
+  }, [supabase]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Sign out error:", error);
+    }
     setUser(null);
     setSession(null);
-  }, [supabase.auth]);
+  }, [supabase]);
 
   return (
     <AuthContext.Provider

@@ -13,10 +13,10 @@ export default function WatchTogether() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playedTime, setPlayedTime] = useState(0);
   const [isPartnerPresent, setIsPartnerPresent] = useState(false);
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<unknown>(null);
   const isInternalChange = useRef(false);
   const supabase = createClient();
-  const room = useRef<any>(null);
+  const room = useRef<unknown>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -25,42 +25,42 @@ export default function WatchTogether() {
       config: { presence: { key: user.email } },
     });
 
-    room.current
+    (room.current as ReturnType<typeof supabase.channel>)
       .on('presence', { event: 'sync' }, () => {
-        const state = room.current.state;
+        const state = (room.current as any).state;
         const users = Object.keys(state);
         setIsPartnerPresent(users.length > 1);
       })
-      .on('broadcast', { event: 'video-state' }, ({ payload }: any) => {
+      .on('broadcast', { event: 'video-state' }, ({ payload }: { payload: { sender: string; type: string; url?: string; time?: number } }) => {
         if (payload.sender === user.email) return;
 
         isInternalChange.current = true;
-        if (payload.type === 'load') {
+        if (payload.type === 'load' && payload.url) {
           setVideoUrl(payload.url);
         } else if (payload.type === 'play') {
           setIsPlaying(true);
         } else if (payload.type === 'pause') {
           setIsPlaying(false);
-        } else if (payload.type === 'seek') {
-          playerRef.current?.seekTo(payload.time, 'seconds');
+        } else if (payload.type === 'seek' && payload.time !== undefined) {
+          (playerRef.current as { seekTo: (time: number, type: string) => void })?.seekTo(payload.time, 'seconds');
         }
       })
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
-          await room.current.track({
+          await (room.current as ReturnType<typeof supabase.channel>).track({
             online_at: new Date().toISOString(),
           });
         }
       });
 
     return () => {
-      supabase.removeChannel(room.current);
+      if (room.current) supabase.removeChannel(room.current as ReturnType<typeof supabase.channel>);
     };
   }, [user, supabase]);
 
-  const broadcast = (payload: any) => {
+  const broadcast = (payload: Record<string, unknown>) => {
     if (!room.current) return;
-    room.current.send({
+    (room.current as ReturnType<typeof supabase.channel>).send({
       type: 'broadcast',
       event: 'video-state',
       payload: { ...payload, sender: user?.email },
@@ -166,6 +166,7 @@ export default function WatchTogether() {
           className="glass-card rounded-3xl overflow-hidden aspect-video shadow-[0_20px_60px_rgba(0,0,0,0.5)] border-t border-white/20 relative"
         >
           {videoUrl ? (() => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const Player = ReactPlayer as any;
             return (
               <Player
@@ -178,7 +179,7 @@ export default function WatchTogether() {
                 onPlay={handlePlay}
                 onPause={handlePause}
                 onSeek={handleSeek}
-                onProgress={(p: any) => setPlayedTime(p.playedSeconds)}
+                onProgress={(p: { playedSeconds: number }) => setPlayedTime(p.playedSeconds)}
                 config={{
                   youtube: {
                     disablekb: 1,
