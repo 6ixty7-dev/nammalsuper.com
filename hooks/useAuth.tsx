@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider: 'google',
       options: {
         // Safely redirect to the current origin
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin`,
       },
     });
   }, [supabase.auth]);
