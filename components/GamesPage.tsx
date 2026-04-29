@@ -82,7 +82,7 @@ export default function GamesPage() {
 
   // Game channel for real-time sync
   useEffect(() => {
-    if (!user?.email || !activeGame) return;
+    if (!user?.email) return;
 
     const channel = supabase.channel('game-room', {
       config: { presence: { key: user.email } },
@@ -127,28 +127,44 @@ export default function GamesPage() {
             break;
         }
       })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            game: activeGame,
-            online_at: new Date().toISOString(),
-          });
-        }
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, activeGame, supabase]);
+  }, [user?.email, supabase]);
+
+  // Track active game in presence
+  useEffect(() => {
+    if (!user?.email) return;
+    const updatePresence = async () => {
+      const channel = supabase.channel('game-room');
+      // @ts-ignore
+      if (channel.state === 'joined') {
+        try {
+          await channel.track({
+            game: activeGame,
+            online_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.error('Game presence track error:', e);
+        }
+      }
+    };
+    updatePresence();
+  }, [activeGame, user?.email, supabase]);
 
   const broadcast = useCallback(
     (payload: Record<string, unknown>) => {
       const channel = supabase.channel('game-room');
-      channel.send({
-        type: 'broadcast',
-        event: 'game-action',
-        payload: { ...payload, sender: user?.email },
-      });
+      // @ts-ignore
+      if (channel.state === 'joined') {
+        channel.send({
+          type: 'broadcast',
+          event: 'game-action',
+          payload: { ...payload, sender: user?.email },
+        });
+      }
     },
     [supabase, user?.email]
   );

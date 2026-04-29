@@ -76,11 +76,16 @@ export function usePresence(currentPage?: string): PresenceState {
 
     // Update presence when page changes
     const updatePresence = async () => {
-      if (channel) {
-        await channel.track({
-          online_at: new Date().toISOString(),
-          current_page: currentPage || '/',
-        });
+      // @ts-ignore - state exists on RealtimeChannel
+      if (channel && channel.state === 'joined') {
+        try {
+          await channel.track({
+            online_at: new Date().toISOString(),
+            current_page: currentPage || '/',
+          });
+        } catch (e) {
+          console.error('Presence track error:', e);
+        }
       }
     };
 

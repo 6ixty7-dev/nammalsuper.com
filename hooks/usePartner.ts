@@ -40,16 +40,43 @@ export function usePartner(): UsePartnerReturn {
       return;
     }
 
+    const myEmail = user.email.toLowerCase();
+    const partnerEmailFromList = ALLOWED_USERS
+      .map((e) => e.toLowerCase())
+      .find((e) => e !== myEmail);
+
+    // Always set fallbacks from ALLOWED_USERS immediately
+    // so the app works even without the profiles table
+    setMyProfile({
+      email: myEmail,
+      name: user.user_metadata?.full_name || user.user_metadata?.name || myEmail.split('@')[0],
+      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+    });
+
+    if (partnerEmailFromList) {
+      setPartner({
+        email: partnerEmailFromList,
+        name: partnerEmailFromList.split('@')[0],
+        avatar_url: '',
+      });
+    }
+
+    // Then try to enrich from the profiles table (optional, may not exist yet)
     const fetchProfiles = async () => {
       try {
-        // Fetch both profiles
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .in('email', ALLOWED_USERS.map((e) => e.toLowerCase()));
 
-        if (data) {
-          const myEmail = user.email!.toLowerCase();
+        if (error) {
+          // Table might not exist yet — that's OK, we already have fallbacks
+          console.warn('Profiles table not available:', error.message);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data && data.length > 0) {
           const me = data.find((p) => p.email.toLowerCase() === myEmail);
           const them = data.find((p) => p.email.toLowerCase() !== myEmail);
 
@@ -70,14 +97,15 @@ export function usePartner(): UsePartnerReturn {
           }
         }
       } catch (err) {
-        console.error('Error fetching profiles:', err);
+        // Silently handle — fallbacks are already set
+        console.warn('Could not fetch profiles:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProfiles();
-  }, [user?.email, supabase]);
+  }, [user?.email, user?.user_metadata, supabase]);
 
   return { partner, myProfile, isLoading, getPartnerEmail };
 }

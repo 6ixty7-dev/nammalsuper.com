@@ -115,11 +115,14 @@ export default function ChatSystem() {
 
     if (!isTyping) {
       setIsTyping(true);
-      typingChannel.send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: { email: user.email, isTyping: true },
-      });
+      // @ts-ignore
+      if (typingChannel.state === 'joined') {
+        typingChannel.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: { email: user.email, isTyping: true },
+        });
+      }
     }
 
     // Clear previous timeout
@@ -130,11 +133,14 @@ export default function ChatSystem() {
     // Set new timeout to stop typing after 2s
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      typingChannel.send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: { email: user.email, isTyping: false },
-      });
+      // @ts-ignore
+      if (typingChannel.state === 'joined') {
+        typingChannel.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: { email: user.email, isTyping: false },
+        });
+      }
     }, 2000);
   }, [user?.email, isTyping, supabase]);
 
@@ -149,11 +155,14 @@ export default function ChatSystem() {
     // Stop typing indicator
     setIsTyping(false);
     const typingChannel = supabase.channel('typing-indicator');
-    typingChannel.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { email: user.email, isTyping: false },
-    });
+    // @ts-ignore
+    if (typingChannel.state === 'joined') {
+      typingChannel.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { email: user.email, isTyping: false },
+      });
+    }
 
     await supabase.from('messages').insert({
       sender_email: user.email,
